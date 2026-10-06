@@ -443,7 +443,7 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
 <!-- Cards Row: Capital + Overview Metrics -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 
-<!-- 1. Card: Capital / رأس المال الحالي (قيمة البضاعة حالياً بسعر التكلفة) -->
+<!-- 1. Card: Capital / رأس المال الحالي -->
 <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 text-white p-4 rounded-xl shadow-md border border-slate-700 flex flex-col justify-between relative overflow-hidden">
 <div class="absolute -left-4 -bottom-4 opacity-10 text-6xl text-blue-400">
 <i class="fa-solid fa-vault"></i>
@@ -568,6 +568,7 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
 <tr>
 <th class="p-3">رقم الفاتورة</th>
 <th class="p-3">التاريخ والوقت</th>
+<th class="p-3">أرقام/أكواد المنتجات المباعة</th>
 <th class="p-3">عدد القطع</th>
 <th class="p-3">المجموع الصافي</th>
 <th class="p-3">الربح الصافي</th>
@@ -678,6 +679,7 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
 <tr>
 <th class="p-2.5">رقم الفاتورة</th>
 <th class="p-2.5">التاريخ والوقت</th>
+<th class="p-2.5">أرقام/أكواد المنتجات المباعة</th>
 <th class="p-2.5">عدد المواد</th>
 <th class="p-2.5">المبلغ النهائي</th>
 <th class="p-2.5">الربح</th>
@@ -782,7 +784,7 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
     activeBtn.classList.add('bg-blue-600', 'text-white');
   }
 
-  // Calculate & Display Capital (رأس المال = إجمالي قيمة البضاعة الحالية بسعر التكلفة)
+  // Calculate & Display Capital
   function getInventoryTotalCost() {
     return products.reduce((sum, p) => sum + ((Number(p.cost) || 0) * (Number(p.stock) || 0)), 0);
   }
@@ -944,7 +946,7 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
 
     const batch = db.batch();
 
-    // 1. خصم الكميات من السحابة (ينقص المخزون وبالتالي ينقص رأس المال تلقائياً)
+    // 1. خصم الكميات من السحابة
     cart.forEach(item => {
       const pRef = db.collection('products').doc(item.code);
       const prod = products.find(p => p.code === item.code);
@@ -1154,13 +1156,11 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
     const batch = db.batch();
     const totalUsd = tempPurchaseItems.reduce((s, i) => s + (i.costUsd * i.qty), 0);
 
-    // 1. حفظ الفاتورة في السحابة
     const purRef = db.collection('purchases').doc('PUR-' + invNum);
     batch.set(purRef, {
       invNum, date, rate, items: tempPurchaseItems, totalUsd
     });
 
-    // 2. تزويد المخزون في السحابة (يزيد الكميات فيزداد رأس المال تلقائياً)
     tempPurchaseItems.forEach(item => {
       const pRef = db.collection('products').doc(item.code);
       const existing = products.find(p => p.code === item.code);
@@ -1301,7 +1301,7 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
       dailyMap[day].cost += cost;
       dailyMap[day].profit += profit;
 
-      // Aggregate Weekly (Saturday to Friday)
+      // Aggregate Weekly
       const d = new Date(s.date);
       const dayNum = d.getDay();
       const diffToSat = (dayNum + 1) % 7;
@@ -1361,16 +1361,19 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
       `;
     });
 
-    // Render Sales History Table in Reports
+    // Render Sales History Table in Reports (مع إضافة أرقام المنتجات المباعة)
     const repSalesBody = document.getElementById('reports-sales-body');
     repSalesBody.innerHTML = '';
 
     sales.forEach(s => {
       const itemCount = s.items ? s.items.reduce((acc, i) => acc + i.qty, 0) : 0;
+      const productCodesDisplay = s.items ? s.items.map(i => `<span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 text-[10px] ml-1 font-bold inline-block my-0.5">${i.code} (×${i.qty})</span>`).join(' ') : '-';
+
       repSalesBody.innerHTML += `
         <tr class="hover:bg-slate-50 font-bold">
           <td class="p-3 text-blue-600">${s.id}</td>
           <td class="p-3">${new Date(s.date).toLocaleString('ar-EG')}</td>
+          <td class="p-3">${productCodesDisplay}</td>
           <td class="p-3">${itemCount} قطعة</td>
           <td class="p-3 text-slate-800">${s.finalTotal.toLocaleString()} SYP</td>
           <td class="p-3 text-emerald-600">${s.profit.toLocaleString()} SYP</td>
@@ -1419,16 +1422,19 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
     tbody.innerHTML = '';
 
     if (sales.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-400">لا توجد فواتير مبيعات مسجلة.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-slate-400">لا توجد فواتير مبيعات مسجلة.</td></tr>`;
       return;
     }
 
     sales.forEach(s => {
       const itemCount = s.items ? s.items.reduce((acc, i) => acc + i.qty, 0) : 0;
+      const productCodesDisplay = s.items ? s.items.map(i => `<span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 text-[10px] ml-1 font-bold inline-block my-0.5">${i.code} (×${i.qty})</span>`).join(' ') : '-';
+
       tbody.innerHTML += `
         <tr class="hover:bg-slate-50 font-bold">
           <td class="p-2.5 text-blue-600">${s.id}</td>
           <td class="p-2.5">${new Date(s.date).toLocaleString('ar-EG')}</td>
+          <td class="p-2.5">${productCodesDisplay}</td>
           <td class="p-2.5">${itemCount} قطعة</td>
           <td class="p-2.5 text-blue-700">${s.finalTotal.toLocaleString()} SYP</td>
           <td class="p-2.5 text-emerald-600">${s.profit.toLocaleString()} SYP</td>
@@ -1448,7 +1454,6 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
 
     const batch = db.batch();
 
-    // 1. إعادة الكميات للمخزن (يزيد الكميات فيزداد رأس المال تلقائياً)
     if (sale.items) {
       sale.items.forEach(item => {
         const pRef = db.collection('products').doc(item.code);
@@ -1459,7 +1464,6 @@ class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus
       });
     }
 
-    // 2. حذف الفاتورة من السحابة
     batch.delete(db.collection('sales').doc(saleId));
 
     await batch.commit();
