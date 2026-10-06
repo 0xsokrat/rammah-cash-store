@@ -1,1220 +1,1525 @@
-@@ -0,0 +1,1219 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام رماح كاش - Rammah Cash</title>
-  <!-- الخطوط والأيقونات -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rammah Cash - نظام المبيعات والمخزون والتقارير المالية</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-  <style>
-    :root {
-      --bg-dark: #0f172a;
-      --card-bg: #1e293b;
-      --card-border: #334155;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --success: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-    }
+<!-- Firebase Compat SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Tajawal', sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Navbar */
-    .navbar {
-      background-color: var(--card-bg);
-      border-bottom: 1px solid var(--card-border);
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: #38bdf8;
-    }
-
-    .nav-tabs {
-      display: flex;
-      gap: 10px;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 8px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .tab-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: white;
-    }
-
-    .backup-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      border-radius: 6px;
-      cursor: pointer;
-      border: none;
-      font-weight: 600;
-      transition: 0.2s;
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-    }
-
-    .btn-outline:hover {
-      background: var(--card-border);
-    }
-
-    /* Container */
-    .container {
-      flex: 1;
-      padding: 2rem;
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
-    }
-
-    .view-content {
-      display: none;
-    }
-
-    .view-content.active {
-      display: block;
-    }
-
-    /* POS View */
-    .pos-grid {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 1.5rem;
-    }
-
-    .search-box {
-      margin-bottom: 1rem;
-      position: relative;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 12px 40px 12px 15px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      color: white;
-      font-size: 1rem;
-    }
-
-    .search-box i {
-      position: absolute;
-      right: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-    }
-
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1rem;
-      max-height: 75vh;
-      overflow-y: auto;
-      padding-left: 5px;
-    }
-
-    .product-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1rem;
-      cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .product-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--primary);
-    }
-
-    .product-name {
-      font-weight: 700;
-      font-size: 1.1rem;
-      margin-bottom: 8px;
-    }
-
-    .product-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .product-price {
-      color: var(--success);
-      font-weight: 800;
-      font-size: 1.2rem;
-    }
-
-    /* Cart Section */
-    .cart-container {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.2rem;
-      display: flex;
-      flex-direction: column;
-      height: 78vh;
-    }
-
-    .cart-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      padding-bottom: 0.8rem;
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .cart-items {
-      flex: 1;
-      overflow-y: auto;
-      margin: 1rem 0;
-    }
-
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px dotted var(--card-border);
-    }
-
-    .qty-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg-dark);
-      padding: 4px 8px;
-      border-radius: 6px;
-    }
-
-    .btn-qty {
-      background: transparent;
-      border: none;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      width: 20px;
-      height: 20px;
-    }
-
-    .cart-summary {
-      border-top: 1px solid var(--card-border);
-      padding-top: 1rem;
-    }
-
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 0.95rem;
-    }
-
-    .summary-row.total {
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: var(--success);
-    }
-
-    .btn-checkout {
-      width: 100%;
-      background: var(--success);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: 0.2s;
-    }
-
-    .btn-checkout:hover {
-      background: #059669;
-    }
-
-    /* General Tables */
-    .table-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.2rem;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: right;
-    }
-
-    th, td {
-      padding: 12px 15px;
-      border-bottom: 1px solid var(--card-border);
-    }
-
-    th {
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    /* Stats Cards */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.2rem;
-      margin-bottom: 1.8rem;
-    }
-
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.2rem;
-      position: relative;
-    }
-
-    .stat-title {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 1.6rem;
-      font-weight: 800;
-    }
-
-    .stat-card.capital {
-      border-right: 4px solid var(--primary);
-    }
-    .stat-card.sales {
-      border-right: 4px solid var(--success);
-    }
-    .stat-card.cost {
-      border-right: 4px solid var(--warning);
-    }
-    .stat-card.profit {
-      border-right: 4px solid #a855f7;
-    }
-
-    /* Capital Actions Header */
-    .capital-box {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border: 1px solid var(--primary);
-      border-radius: 14px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .capital-info h3 {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-bottom: 5px;
-    }
-
-    .capital-info .amount {
-      font-size: 2rem;
-      font-weight: 800;
-      color: #60a5fa;
-    }
-
-    .capital-btns {
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      width: 450px;
-      max-width: 90%;
-      padding: 1.5rem;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.2rem;
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 10px;
-      background: var(--bg-dark);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      color: white;
-    }
-
-    .note-box {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid var(--warning);
-      color: #fcd34d;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      margin-bottom: 1rem;
-      line-height: 1.4;
-    }
-
-    .text-danger { color: var(--danger); }
-    .text-success { color: var(--success); }
-    .badge {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-  </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+* { 
+  font-family: 'Tajawal', sans-serif; 
+  font-variant-numeric: tabular-nums lining-nums; 
+}
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] { 
+  -moz-appearance: textfield; 
+}
+</style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="brand">
-      <i class="fa-solid fa-cash-register"></i>
-      <span>رماح كاش</span>
-    </div>
-    <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('pos')">
-        <i class="fa-solid fa-cart-shopping"></i> نقطة البيع
-      </button>
-      <button class="tab-btn" onclick="switchTab('inventory')">
-        <i class="fa-solid fa-boxes-stacked"></i> المخزن والمنتجات
-      </button>
-      <button class="tab-btn" onclick="switchTab('reports')">
-        <i class="fa-solid fa-chart-line"></i> التقارير الماليّة
-      </button>
-    </div>
-    <div class="backup-actions">
-      <button class="btn-sm btn-outline" onclick="exportData()" title="تصدير نسخة احتياطية">
-        <i class="fa-solid fa-download"></i> تصدير
-      </button>
-      <button class="btn-sm btn-outline" onclick="document.getElementById('importFile').click()" title="استرجاع نسخة">
-        <i class="fa-solid fa-upload"></i> استرجاع
-      </button>
-      <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-    </div>
-  </nav>
+<!-- Header / Navigation Bar -->
+<header class="bg-slate-900 text-white shadow-xl sticky top-0 z-40">
+<div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-4">
+<div class="flex items-center gap-3">
+<div class="bg-blue-600 p-2 rounded-lg text-white shadow-md">
+<i class="fa-solid fa-cash-register text-xl"></i>
+</div>
+<div>
+<h1 class="text-2xl font-black tracking-wider text-blue-400">Rammah Cash</h1>
+<p class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+  <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+  متصل بالسحابة (تزامن فوري)
+</p>
+</div>
+</div>
 
-  <!-- Container -->
-  <div class="container">
+<!-- Navigation Tabs -->
+<nav class="flex gap-1.5 bg-slate-800 p-1.5 rounded-xl overflow-x-auto text-xs font-bold">
+<button onclick="switchTab('pos')" id="tab-pos" class="tab-btn px-4 py-2 rounded-lg transition bg-blue-600 text-white flex items-center gap-2">
+<i class="fa-solid fa-cart-shopping"></i> قسم المبيع
+</button>
+<button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn px-4 py-2 rounded-lg transition text-slate-300 hover:text-white flex items-center gap-2">
+<i class="fa-solid fa-boxes-stacked"></i> البضاعة والمخزون
+</button>
+<button onclick="switchTab('purchases')" id="tab-purchases" class="tab-btn px-4 py-2 rounded-lg transition text-slate-300 hover:text-white flex items-center gap-2">
+<i class="fa-solid fa-file-invoice-dollar"></i> فواتير المشتريات
+</button>
+<button onclick="switchTab('payments')" id="tab-payments" class="tab-btn px-4 py-2 rounded-lg transition text-slate-300 hover:text-white flex items-center gap-2">
+<i class="fa-solid fa-hand-holding-dollar"></i> تسديد كلفة بضاعة
+</button>
+<button onclick="switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 rounded-lg transition text-slate-300 hover:text-white flex items-center gap-2">
+<i class="fa-solid fa-chart-line text-amber-400"></i> التقارير الماليّة
+</button>
+<button onclick="switchTab('backup')" id="tab-backup" class="tab-btn px-4 py-2 rounded-lg transition text-slate-300 hover:text-white flex items-center gap-2">
+<i class="fa-solid fa-database"></i> النسخ الاحتياطي
+</button>
+</nav>
+</div>
+</header>
 
-    <!-- 1. POS View -->
-    <div id="view-pos" class="view-content active">
-      <div class="pos-grid">
-        <div>
-          <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="posSearch" placeholder="بحث عن منتج..." oninput="renderPosProducts()">
-          </div>
-          <div class="products-grid" id="posProductsList"></div>
-        </div>
+<!-- Main Content Area -->
+<main class="max-w-7xl mx-auto w-full p-4 flex-1">
 
-        <!-- Cart -->
-        <div class="cart-container">
-          <div class="cart-title">
-            <i class="fa-solid fa-receipt"></i>
-            <span>سلة المبيعات الحالية</span>
-          </div>
-          <div class="cart-items" id="cartItemsList"></div>
-          <div class="cart-summary">
-            <div class="summary-row">
-              <span>عدد المواد:</span>
-              <span id="cartCount">0</span>
-            </div>
-            <div class="summary-row total">
-              <span>الإجمالي:</span>
-              <span id="cartTotal">0.00 $</span>
-            </div>
-            <button class="btn-checkout" onclick="completeSale()">
-              <i class="fa-solid fa-circle-check"></i> إتمام عملية البيع
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+<!-- 1. TAB: POS / قسم المبيع -->
+<section id="sec-pos" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 space-y-4">
 
-    <!-- 2. Inventory View -->
-    <div id="view-inventory" class="view-content">
-      <div class="table-card">
-        <div class="table-header">
-          <h2><i class="fa-solid fa-boxes-stacked"></i> إدارة المنتجات والمخزون</h2>
-          <button class="btn-primary" onclick="openProductModal()">
-            <i class="fa-solid fa-plus"></i> إضافة منتج جديد
-          </button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>اسم المنتج</th>
-              <th>سعر التكلفة</th>
-              <th>سعر البيع</th>
-              <th>الكمية المتاحة</th>
-              <th>إجمالي قيمة التكلفة</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="inventoryTableBody"></tbody>
-        </table>
-      </div>
-    </div>
+<!-- Search & Quantity Selection Bar -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+<div class="flex justify-between items-center mb-2">
+<label class="block text-xs font-bold text-slate-700">إدخال كود أو اسم القطعة وتحديد الكمية:</label>
+<button onclick="openPastSalesModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-clock-rotate-left text-blue-400"></i> عرض الفواتير السابقة
+</button>
+</div>
 
-    <!-- 3. Reports & Capital View -->
-    <div id="view-reports" class="view-content">
-      
-      <!-- Capital Box -->
-      <div class="capital-box">
-        <div class="capital-info">
-          <h3>رأس المال الحالي (إجمالي قيمة البضاعة بالمخزن بسعر التكلفة)</h3>
-          <div class="amount" id="displayCapital">0.00 $</div>
-        </div>
-        <div class="capital-btns">
-          <button class="btn-primary" onclick="syncCapitalWithInventory()" style="background:#059669;">
-            <i class="fa-solid fa-rotate"></i> مزامنة تلقائية مع قيمة المخزون
-          </button>
-          <button class="btn-primary" onclick="openCapitalModal()">
-            <i class="fa-solid fa-sliders"></i> تعديل / ضبط يدوي
-          </button>
-        </div>
-      </div>
+<div class="flex flex-col sm:flex-row gap-2">
+<div class="flex-1">
+<input type="text" id="pos-search" oninput="livePreviewPOS()" onkeypress="if(event.key === 'Enter') searchAndAddToCart()" 
+placeholder="ادخل كود القطعة أو اسمها..."
+class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-base">
+</div>
 
-      <!-- General Stats -->
-      <div class="stats-grid">
-        <div class="stat-card sales">
-          <div class="stat-title">إجمالي المبيعات</div>
-          <div class="stat-value" id="statSales">0.00 $</div>
-        </div>
-        <div class="stat-card cost">
-          <div class="stat-title">إجمالي التكلفة للمبيعات</div>
-          <div class="stat-value" id="statCost">0.00 $</div>
-        </div>
-        <div class="stat-card profit">
-          <div class="stat-title">صافي الأرباح الإجمالية</div>
-          <div class="stat-value" id="statProfit">0.00 $</div>
-        </div>
-        <div class="stat-card capital">
-          <div class="stat-title">إجمالي الفواتير المكتملة</div>
-          <div class="stat-value" id="statInvoicesCount">0</div>
-        </div>
-      </div>
+<div class="w-full sm:w-32 flex-shrink-0">
+<div class="relative">
+<input type="number" id="pos-add-qty" min="1" value="1" placeholder="الكمية"
+onkeypress="if(event.key === 'Enter') searchAndAddToCart()"
+class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-center font-bold text-base focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50">
+<span class="absolute left-2 top-3 text-[10px] text-slate-400 font-bold pointer-events-none">العدد</span>
+</div>
+</div>
 
-      <!-- Daily Profits Table -->
-      <div class="table-card">
-        <h3><i class="fa-solid fa-calendar-day"></i> سجل الأرباح اليومية</h3>
-        <br>
-        <table>
-          <thead>
-            <tr>
-              <th>التاريخ</th>
-              <th>عدد الفواتير</th>
-              <th>إجمالي المبيعات</th>
-              <th>إجمالي التكلفة</th>
-              <th>صافي الربح اليومي</th>
-            </tr>
-          </thead>
-          <tbody id="dailyProfitsTable"></tbody>
-        </table>
-      </div>
+<button onclick="searchAndAddToCart()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition text-xs whitespace-nowrap shadow">
+<i class="fa-solid fa-plus"></i> إضافة للسلة
+</button>
+</div>
 
-      <!-- Weekly Profits Table -->
-      <div class="table-card">
-        <h3><i class="fa-solid fa-calendar-week"></i> سجل الأرباح الأسبوعية (من السبت للجمعة)</h3>
-        <br>
-        <table>
-          <thead>
-            <tr>
-              <th>الفترة الأسبوعية</th>
-              <th>عدد الفواتير</th>
-              <th>إجمالي المبيعات</th>
-              <th>إجمالي التكلفة</th>
-              <th>صافي الربح الأسبوعي</th>
-            </tr>
-          </thead>
-          <tbody id="weeklyProfitsTable"></tbody>
-        </table>
-      </div>
+<div id="pos-item-preview" class="hidden mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs grid grid-cols-2 sm:grid-cols-5 gap-3 font-bold text-slate-700">
+<div><span class="block text-[10px] text-slate-500">اسم القطعة:</span><span id="prev-name" class="text-blue-800 font-extrabold">-</span></div>
+<div><span class="block text-[10px] text-slate-500">المخزون المتاح:</span><span id="prev-stock" class="text-slate-800 font-extrabold">-</span></div>
+<div><span class="block text-[10px] text-slate-500">سعر التكلفة:</span><span id="prev-cost" class="text-slate-600">-</span></div>
+<div><span class="block text-[10px] text-slate-500">سعر البيع:</span><span id="prev-price" class="text-blue-600 font-extrabold">-</span></div>
+<div><span class="block text-[10px] text-slate-500">ربح القطعة:</span><span id="prev-profit" class="text-emerald-600 font-extrabold">-</span></div>
+</div>
+</div>
 
-      <!-- Invoices History -->
-      <div class="table-card">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> سجل الفواتير التفصيلي</h3>
-        <br>
-        <table>
-          <thead>
-            <tr>
-              <th>رقم الفاتورة</th>
-              <th>التاريخ والوقت</th>
-              <th>المبلغ الإجمالي</th>
-              <th>التكلفة</th>
-              <th>الربح</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="invoicesTableBody"></tbody>
-        </table>
-      </div>
+<!-- Cart Table -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 flex justify-between items-center text-xs">
+<span class="flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-blue-600"></i> سلة البيع الحالية</span>
+<span id="cart-count" class="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-bold">0 مواد</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-600 font-bold">
+<tr>
+<th class="p-2.5">الكود</th>
+<th class="p-2.5">اسم القطعة</th>
+<th class="p-2.5">التكلفة</th>
+<th class="p-2.5">سعر البيع</th>
+<th class="p-2.5">المتاح</th>
+<th class="p-2.5">الكمية المطلوبة</th>
+<th class="p-2.5">ربح الكمية</th>
+<th class="p-2.5">الإجمالي</th>
+<th class="p-2.5 text-center">حذف</th>
+</tr>
+</thead>
+<tbody id="cart-table-body" class="divide-y divide-slate-100">
+<tr>
+<td colspan="9" class="text-center p-8 text-slate-400 font-bold">السلة فارغة. أدخل رقم الكود والعدد المطلوب للبيع.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
 
-    </div>
+<!-- Invoice Summary Side Box -->
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between h-fit space-y-6">
+<div>
+<h2 class="text-base font-bold text-slate-800 border-b pb-3 mb-4 flex items-center justify-between">
+<span>ملخص الفاتورة الحالية</span>
+<i class="fa-solid fa-receipt text-blue-600"></i>
+</h2>
 
-  </div>
+<div class="space-y-3 text-xs">
+<div class="flex justify-between text-slate-600">
+<span>المجموع الفرعي:</span>
+<span id="pos-subtotal" class="font-bold text-slate-800">0 SYP</span>
+</div>
+<div>
+<label class="block font-bold text-slate-600 mb-1">خصم يدوي (SYP):</label>
+<input type="number" id="pos-discount" min="0" oninput="renderCart()" placeholder="0"
+class="w-full px-3 py-2 border rounded-lg text-left font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+</div>
+<hr class="my-2">
+<div class="flex justify-between items-center font-bold text-sm">
+<span class="text-slate-800">المبلغ النهائي الصافي:</span>
+<span id="pos-final-total" class="text-blue-600 text-xl font-extrabold">0 SYP</span>
+</div>
+<div class="flex justify-between text-emerald-600 font-bold bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+<span>الربح المتوقع للفاتورة:</span>
+<span id="pos-expected-profit" class="text-sm">0 SYP</span>
+</div>
+</div>
+</div>
 
-  <!-- Product Modal -->
-  <div class="modal" id="productModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="productModalTitle">إضافة منتج جديد</h3>
-        <button class="btn-sm btn-outline" onclick="closeProductModal()">X</button>
-      </div>
-      <form id="productForm" onsubmit="saveProduct(event)">
-        <input type="hidden" id="prodId">
-        <div class="form-group">
-          <label>اسم المنتج *</label>
-          <input type="text" id="prodName" required>
-        </div>
-        <div class="form-group">
-          <label>سعر التكلفة (شراء) *</label>
-          <input type="number" step="0.01" id="prodCost" required>
-        </div>
-        <div class="form-group">
-          <label>سعر البيع *</label>
-          <input type="number" step="0.01" id="prodPrice" required>
-        </div>
-        <div class="form-group">
-          <label>الكمية المتوفرة في المخزن *</label>
-          <input type="number" id="prodStock" required>
-        </div>
-        <button type="submit" class="btn-primary" style="width: 100%;">حفظ البيانات</button>
-      </form>
-    </div>
-  </div>
+<div class="space-y-2">
+<button onclick="completeSale()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
+<i class="fa-solid fa-circle-check"></i> إتمام البيع وتسجيل الفاتورة
+</button>
+<button onclick="clearCart()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-lg transition text-xs">
+تفريغ السلة
+</button>
+</div>
+</div>
+</section>
 
-  <!-- Capital Adjustment Modal -->
-  <div class="modal" id="capitalModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-coins"></i> تعديل رأس المال يدوياً</h3>
-        <button class="btn-sm btn-outline" onclick="closeCapitalModal()">X</button>
-      </div>
-      <div class="form-group">
-        <label>نوع التعديل *</label>
-        <select id="capitalAdjType">
-          <option value="set">ضبط قيمة رأس المال بمبلغ مباشر</option>
-          <option value="add">إضافة مبلغ لرأس المال الحالي</option>
-          <option value="sub">خصم مبلغ من رأس المال الحالي</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>المبلغ *</label>
-        <input type="number" step="0.01" id="capitalAdjAmount" placeholder="0.00">
-      </div>
-      <div class="note-box">
-        تنبيه: يتحدث رأس المال تلقائياً مع كل عملية بيع جديدة حيث ينقص بقيمة (تكلفة البضاعة المباعة)، ويزداد مجدداً عند إلغاء أو حذف أي فاتورة.
-      </div>
-      <button class="btn-primary" style="width: 100%;" onclick="applyCapitalAdjustment()">حفظ التعديل</button>
-    </div>
-  </div>
+<!-- 2. TAB: INVENTORY / البضاعة والمخزون -->
+<section id="sec-inventory" class="tab-content hidden space-y-6">
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+<div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+<h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+<i class="fa-solid fa-box-open text-blue-600"></i> إدخال / تعديل كمية بضاعة بالمخزون
+</h2>
+<span id="p-status-badge" class="hidden text-xs font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+مادة مسجلة سابقاً
+</span>
+</div>
+<form id="product-form" onsubmit="saveProduct(event)" class="grid grid-cols-1 md:grid-cols-6 gap-3">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">رقم القطعة / الكود *</label>
+<input type="text" id="p-code" required oninput="autoCheckProduct()" placeholder="الكود" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div class="md:col-span-2">
+<label class="block text-xs font-bold text-slate-700 mb-1">اسم القطعة والموديل *</label>
+<input type="text" id="p-name" required placeholder="الاسم" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">نوع العملية *</label>
+<select id="p-action" class="w-full px-3 py-2 border rounded-lg font-bold text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+<option value="add">➕ إضافة كمية (زيادة)</option>
+<option value="remove">➖ إزالة كمية (نقصان)</option>
+<option value="set">🔄 ضبط كمية ثابتة</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">سعر التكلفة (SYP) *</label>
+<input type="number" step="1" id="p-cost" required placeholder="0" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">سعر البيع (SYP) *</label>
+<input type="number" step="1" id="p-price" required placeholder="0" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div class="md:col-span-2">
+<label class="block text-xs font-bold text-slate-700 mb-1">الكمية المطلوبة *</label>
+<input type="number" id="p-qty" required placeholder="الكمية" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+<span id="p-current-qty-info" class="text-[11px] font-bold text-blue-600 mt-1 block">الكمية الحالية بالمحل: 0 قطعة</span>
+</div>
+<div class="md:col-span-4 flex justify-end items-end">
+<button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-xs transition flex items-center gap-2">
+<i class="fa-solid fa-floppy-disk"></i> حفظ وتحديث المخزون
+</button>
+</div>
+</form>
+</div>
 
-  <script>
-    // System Data State
-    let products = JSON.parse(localStorage.getItem('rc_products')) || [];
-    let sales = JSON.parse(localStorage.getItem('rc_sales')) || [];
-    let capital = parseFloat(localStorage.getItem('rc_capital')) || calculateInventoryTotalCost();
-    let cart = [];
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center flex-wrap gap-4 text-xs">
+<span class="font-bold text-slate-700">قائمة المخزون والبضاعة الحالية</span>
+<input type="text" id="inventory-filter" oninput="renderInventory()" placeholder="بحث باسم أو كود المادة..." class="px-3 py-1.5 border rounded-lg w-64 focus:outline-none font-bold">
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-600 font-bold">
+<tr>
+<th class="p-3">رقم القطعة</th>
+<th class="p-3">اسم القطعة</th>
+<th class="p-3">التكلفة (SYP)</th>
+<th class="p-3">البيع (SYP)</th>
+<th class="p-3">الربح/قطعة</th>
+<th class="p-3">المخزون الحالي</th>
+<th class="p-3 text-center">خيارات</th>
+</tr>
+</thead>
+<tbody id="inventory-table-body" class="divide-y divide-slate-100">
+<!-- JS populated -->
+</tbody>
+</table>
+</div>
+</div>
+</section>
 
-    // Initialize
-    window.onload = () => {
-      saveData();
-      renderPosProducts();
+<!-- 3. TAB: PURCHASES / فواتير المشتريات -->
+<section id="sec-purchases" class="tab-content hidden space-y-6">
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+<h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+<i class="fa-solid fa-file-circle-plus text-blue-600"></i> تسجيل فاتورة شراء جديدة
+</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 border-b pb-4">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">رقم الفاتورة *</label>
+<input type="text" id="pur-inv-num" required placeholder="رقم الفاتورة" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الفاتورة *</label>
+<input type="date" id="pur-date" required class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">سعر صرف الدولار (SYP) *</label>
+<input type="number" id="pur-rate" oninput="calculateItemCostSYP()" placeholder="سعر الصرف" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+</div>
+
+<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 mb-4">
+<p class="text-xs font-bold text-slate-700">إضافة مادة للفاتورة الحالية:</p>
+<div class="grid grid-cols-1 md:grid-cols-6 gap-2 text-xs">
+<div>
+<label class="block text-[10px] font-bold text-slate-600 mb-1">رقم القطعة *</label>
+<input type="text" id="pur-code" onblur="autoFillPurchaseItem()" placeholder="الكود" class="w-full px-2 py-2 border rounded font-bold">
+</div>
+<div class="md:col-span-2">
+<label class="block text-[10px] font-bold text-slate-600 mb-1">اسم القطعة والموديل *</label>
+<input type="text" id="pur-name" placeholder="الاسم" class="w-full px-2 py-2 border rounded font-bold">
+</div>
+<div>
+<label class="block text-[10px] font-bold text-slate-600 mb-1">التكلفة ($) *</label>
+<input type="number" step="0.01" id="pur-cost-usd" oninput="calculateItemCostSYP()" placeholder="0.00" class="w-full px-2 py-2 border rounded font-bold">
+</div>
+<div>
+<label class="block text-[10px] font-bold text-slate-600 mb-1">التكلفة بالسوري (تلقائي)</label>
+<input type="number" id="pur-cost-syp" readonly class="w-full px-2 py-2 border rounded font-bold bg-slate-200 text-slate-700">
+</div>
+<div>
+<label class="block text-[10px] font-bold text-slate-600 mb-1">سعر البيع (SYP) *</label>
+<input type="number" id="pur-price-syp" placeholder="0" class="w-full px-2 py-2 border rounded font-bold">
+</div>
+<div>
+<label class="block text-[10px] font-bold text-slate-600 mb-1">الكمية *</label>
+<input type="number" id="pur-qty" placeholder="العدد" class="w-full px-2 py-2 border rounded font-bold">
+</div>
+</div>
+<button onclick="addItemToTempPurchase()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded text-xs transition">
++ إضافة المادة للقائمة
+</button>
+</div>
+
+<div class="border rounded-lg overflow-hidden mb-4">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-200 text-slate-700 font-bold">
+<tr>
+<th class="p-2">كود</th>
+<th class="p-2">الاسم</th>
+<th class="p-2">التكلفة ($)</th>
+<th class="p-2">التكلفة (SYP)</th>
+<th class="p-2">البيع (SYP)</th>
+<th class="p-2">الكمية</th>
+<th class="p-2 text-center">خيارات</th>
+</tr>
+</thead>
+<tbody id="pur-temp-table" class="divide-y divide-slate-100">
+<tr><td colspan="7" class="text-center p-4 text-slate-400">لم يتم إضافة مواد للفاتورة بعد.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="flex justify-between items-center pt-2">
+<div class="text-xs font-bold text-slate-700">
+إجمالي الفاتورة بالدولار: <span id="pur-total-usd" class="text-blue-600 text-base">0 $</span>
+</div>
+<button onclick="savePurchaseInvoice()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-lg text-xs transition">
+حفظ الفاتورة وتحديث المخزون
+</button>
+</div>
+</div>
+
+<!-- أرشيف فواتير المشتريات -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-xs flex justify-between items-center">
+<span>أرشيف فواتير المشتريات المسجلة</span>
+<span class="text-[11px] text-slate-500 font-normal">اضغط على زر العرض لرؤية تفاصيل أي فاتورة مسبقة</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-600 font-bold">
+<tr>
+<th class="p-3">رقم الفاتورة</th>
+<th class="p-3">التاريخ</th>
+<th class="p-3">سعر الصرف</th>
+<th class="p-3">عدد المواد</th>
+<th class="p-3">إجمالي الكلفة ($)</th>
+<th class="p-3 text-center">حذف</th>
+</tr>
+</thead>
+<tbody id="purchases-archive-body" class="divide-y divide-slate-100">
+<!-- JS populated -->
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- 4. TAB: PAYMENTS / تسديد كلفة بضاعة -->
+<section id="sec-payments" class="tab-content hidden space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-blue-600">
+<p class="text-xs font-bold text-slate-500">إجمالي كلفة المشتريات بالدولار</p>
+<p id="pay-total-purchases" class="text-2xl font-black text-slate-800 mt-1">0 $</p>
+</div>
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-emerald-500">
+<p class="text-xs font-bold text-slate-500">إجمالي المبالغ المسددة بالدولار</p>
+<p id="pay-total-paid" class="text-2xl font-black text-emerald-600 mt-1">0 $</p>
+</div>
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-red-500">
+<p class="text-xs font-bold text-slate-500">الصافي المتبقي للتسديد</p>
+<p id="pay-remaining" class="text-2xl font-black text-red-600 mt-1">0 $</p>
+</div>
+</div>
+
+<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+<h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+<i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> تسجيل دفعة تسديد كلفة بضاعة (بالدولار $)
+</h2>
+<form id="payment-form" onsubmit="recordSupplierPayment(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">التاريخ *</label>
+<input type="date" id="pay-date" required class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">المبلغ المسدد ($) *</label>
+<input type="number" step="0.01" id="pay-amount-usd" required placeholder="0.00 $" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div class="md:col-span-2">
+<label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات / بيان *</label>
+<input type="text" id="pay-notes" required placeholder="بيان الدفعة" class="w-full px-3 py-2 border rounded-lg font-bold text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+</div>
+<div class="md:col-span-4 flex justify-end">
+<button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-lg text-xs transition">
+حفظ دفعة التسديد
+</button>
+</div>
+</form>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-xs">
+سجل الدفعات والتسديدات
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-600 font-bold">
+<tr>
+<th class="p-3">التاريخ</th>
+<th class="p-3">المبلغ المسدد ($)</th>
+<th class="p-3">الملاحظات</th>
+<th class="p-3 text-center">حذف</th>
+</tr>
+</thead>
+<tbody id="payments-history-body" class="divide-y divide-slate-100">
+<!-- JS populated -->
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- 5. TAB: REPORTS & FINANCIALS / التقارير المالية -->
+<section id="sec-reports" class="tab-content hidden space-y-6">
+
+<!-- Cards Row: Capital + Overview Metrics -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+<!-- 1. Card: Capital / رأس المال الحالي (قيمة البضاعة حالياً بسعر التكلفة) -->
+<div class="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 text-white p-4 rounded-xl shadow-md border border-slate-700 flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -left-4 -bottom-4 opacity-10 text-6xl text-blue-400">
+<i class="fa-solid fa-vault"></i>
+</div>
+<div>
+<div class="flex justify-between items-center mb-1">
+<span class="text-[11px] font-bold text-blue-300 flex items-center gap-1">
+<i class="fa-solid fa-coins text-amber-400"></i> رأس المال (قيمة المخزون)
+</span>
+<button onclick="openEditCapitalModal()" title="تعديل رأس المال" class="bg-blue-600/80 hover:bg-blue-600 text-white p-1.5 rounded-lg text-xs transition">
+<i class="fa-solid fa-pen-to-square"></i>
+</button>
+</div>
+<p id="rep-current-capital" class="text-xl font-black text-amber-400 tracking-wide mt-1">0 SYP</p>
+</div>
+<p class="text-[9px] text-slate-300 mt-2 font-medium">يتغير تلقائياً بحسب كمية البضاعة المتوفرة</p>
+</div>
+
+<!-- 2. Today's Sales -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-blue-600 flex flex-col justify-between">
+<div>
+<p class="text-[11px] font-bold text-slate-500">مبيعات اليوم</p>
+<p id="rep-today-sales" class="text-xl font-black text-blue-600 mt-1">0 SYP</p>
+</div>
+<span class="text-[10px] text-slate-400 font-bold mt-2">اليوم الحالي</span>
+</div>
+
+<!-- 3. Today's Profit -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-emerald-500 flex flex-col justify-between">
+<div>
+<p class="text-[11px] font-bold text-slate-500">ربح اليوم</p>
+<p id="rep-today-profit" class="text-xl font-black text-emerald-600 mt-1">0 SYP</p>
+</div>
+<span class="text-[10px] text-slate-400 font-bold mt-2">اليوم الحالي</span>
+</div>
+
+<!-- 4. Total Sales -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-indigo-500 flex flex-col justify-between">
+<div>
+<p class="text-[11px] font-bold text-slate-500">المبيعات الإجمالية</p>
+<p id="rep-total-sales" class="text-xl font-black text-indigo-600 mt-1">0 SYP</p>
+</div>
+<span class="text-[10px] text-slate-400 font-bold mt-2">كافة الأوقات</span>
+</div>
+
+<!-- 5. Total Profit -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-amber-500 flex flex-col justify-between">
+<div>
+<p class="text-[11px] font-bold text-slate-500">الأرباح الإجمالية</p>
+<p id="rep-total-profit" class="text-xl font-black text-amber-600 mt-1">0 SYP</p>
+</div>
+<span class="text-[10px] text-slate-400 font-bold mt-2">كافة الأوقات</span>
+</div>
+</div>
+
+<!-- Tables Container Grid: Daily Profits & Weekly Profits -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+<!-- 1. Daily Profits Table / سجل الأرباح اليومية -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+<div class="p-3.5 bg-slate-900 text-white font-bold text-xs flex justify-between items-center">
+<span class="flex items-center gap-2">
+<i class="fa-solid fa-calendar-day text-emerald-400"></i> سجل الأرباح اليومية (مجمّع باليوم)
+</span>
+<span id="daily-log-count" class="bg-slate-800 text-emerald-300 text-[10px] px-2 py-0.5 rounded font-bold">0 يوم</span>
+</div>
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-700 font-bold">
+<tr>
+<th class="p-2.5">التاريخ</th>
+<th class="p-2.5 text-center">الفواتير</th>
+<th class="p-2.5">المبيعات</th>
+<th class="p-2.5">التكلفة</th>
+<th class="p-2.5">صافي الربح</th>
+</tr>
+</thead>
+<tbody id="rep-daily-table-body" class="divide-y divide-slate-100">
+<!-- JS populated -->
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 2. Weekly Profits Table / سجل الأرباح الأسبوعية -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+<div class="p-3.5 bg-slate-900 text-white font-bold text-xs flex justify-between items-center">
+<span class="flex items-center gap-2">
+<i class="fa-solid fa-calendar-week text-amber-400"></i> سجل الأرباح الأسبوعية (من السبت للجمعة)
+</span>
+<span id="weekly-log-count" class="bg-slate-800 text-amber-300 text-[10px] px-2 py-0.5 rounded font-bold">0 أسبوع</span>
+</div>
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-700 font-bold">
+<tr>
+<th class="p-2.5">الفترة الأسبوعية</th>
+<th class="p-2.5 text-center">الفواتير</th>
+<th class="p-2.5">المبيعات</th>
+<th class="p-2.5">التكلفة</th>
+<th class="p-2.5">صافي الربح</th>
+</tr>
+</thead>
+<tbody id="rep-weekly-table-body" class="divide-y divide-slate-100">
+<!-- JS populated -->
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<!-- Detailed Sales Invoices Log / سجل حركة الفواتير المفصل -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-xs flex justify-between items-center">
+<span class="flex items-center gap-2"><i class="fa-solid fa-list-check text-blue-600"></i> سجل الفواتير والمبيعات التفصيلي</span>
+<button onclick="openPastSalesModal()" class="text-blue-600 hover:underline font-bold">عرض الفواتير بكامل التفاصيل</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-600 font-bold">
+<tr>
+<th class="p-3">رقم الفاتورة</th>
+<th class="p-3">التاريخ والوقت</th>
+<th class="p-3">عدد القطع</th>
+<th class="p-3">المجموع الصافي</th>
+<th class="p-3">الربح الصافي</th>
+<th class="p-3 text-center">خيارات</th>
+</tr>
+</thead>
+<tbody id="reports-sales-body" class="divide-y divide-slate-100">
+<!-- JS populated -->
+</tbody>
+</table>
+</div>
+</div>
+
+</section>
+
+<!-- 6. TAB: BACKUP / النسخ الاحتياطي -->
+<section id="sec-backup" class="tab-content hidden space-y-6">
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6 max-w-2xl mx-auto">
+<h2 class="text-base font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+<i class="fa-solid fa-database text-blue-600"></i> إدارة البيانات والنسخ الاحتياطي
+</h2>
+
+<div class="space-y-4">
+<div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+<h3 class="font-bold text-xs text-slate-800 mb-1">تصديـر نسخة احتياطية (تنزيل ملف)</h3>
+<p class="text-[11px] text-slate-500 mb-3">احفظ جميع معلومات المواد والمبيعات ورأس المال وفواتير المشتريات والدفعات في ملف خارجي.</p>
+<button onclick="exportData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-2">
+<i class="fa-solid fa-download"></i> تصدير البيانات الأن (JSON)
+</button>
+</div>
+
+<div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+<h3 class="font-bold text-xs text-slate-800 mb-1">استعـادة نسخة احتياطية</h3>
+<p class="text-[11px] text-slate-500 mb-3">حدد ملف النسخة الاحتياطية الذي تم تنزيله سابقاً لاسترجاع كافة البيانات ورأس المال.</p>
+<input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+<button onclick="document.getElementById('import-file').click()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-2">
+<i class="fa-solid fa-upload"></i> اختيار ملف واسترجاع
+</button>
+</div>
+
+<div class="p-4 bg-red-50 rounded-xl border border-red-200">
+<h3 class="font-bold text-xs text-red-800 mb-1">مسح واستعادة ضبط النظام</h3>
+<p class="text-[11px] text-red-600 mb-3">تحذير: سيقوم هذا الخيار بتفريغ كافة البيانات والمنتجات ورأس المال وسجلات الفواتير من السحابة!</p>
+<button onclick="clearAllData()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-2">
+<i class="fa-solid fa-trash-can"></i> مسح جميع البيانات
+</button>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+
+<!-- MODAL: Edit Capital / تعديل رأس المال -->
+<div id="modal-edit-capital" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+<div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+<h3 class="font-bold text-sm flex items-center gap-2">
+<i class="fa-solid fa-coins text-amber-400"></i> تعديل رأس المال الحالي
+</h3>
+<button onclick="closeEditCapitalModal()" class="text-slate-400 hover:text-white text-lg font-bold">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<div class="p-5 space-y-4">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">نوع التعادل والتعديل *</label>
+<select id="capital-mode" class="w-full px-3 py-2 border rounded-lg font-bold text-xs bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+<option value="set">🔄 ضبط رأس المال بمبلغ جديد مباشر</option>
+<option value="add">➕ إضافة مبلغ لتعادل رأس المال (زيادة)</option>
+<option value="subtract">➖ خصم مبلغ من تعادل رأس المال (سحب)</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1">المبلغ بالليرة السورية (SYP) *</label>
+<input type="number" id="capital-amount-input" min="0" placeholder="0" class="w-full px-3 py-2.5 border rounded-lg font-bold text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+</div>
+<div class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-[11px] text-amber-800 font-bold">
+ملاحظة: يحسب رأس المال تلقائياً بناءً على قيمة البضاعة المتوفرة حالياً بالمحل بسعر التكلفة.
+</div>
+<div class="flex gap-2 justify-end pt-2">
+<button onclick="closeEditCapitalModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs">
+إلغاء
+</button>
+<button onclick="saveCapitalChange()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow">
+حفظ رأس المال
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MODAL 1: Past Sales / الفواتير السابقة -->
+<div id="modal-past-sales" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+<div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+<h3 class="font-bold text-sm flex items-center gap-2">
+<i class="fa-solid fa-receipt text-blue-400"></i> أرشيف الفواتير المبيعة السابقة
+</h3>
+<button onclick="closePastSalesModal()" class="text-slate-400 hover:text-white text-lg font-bold">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<div class="p-4 overflow-y-auto flex-1 space-y-3">
+<div class="overflow-x-auto">
+<table class="w-full text-right text-xs">
+<thead class="bg-slate-100 text-slate-700 font-bold">
+<tr>
+<th class="p-2.5">رقم الفاتورة</th>
+<th class="p-2.5">التاريخ والوقت</th>
+<th class="p-2.5">عدد المواد</th>
+<th class="p-2.5">المبلغ النهائي</th>
+<th class="p-2.5">الربح</th>
+<th class="p-2.5 text-center">إلغاء الفاتورة / حذف</th>
+</tr>
+</thead>
+<tbody id="past-sales-table-body" class="divide-y divide-slate-100">
+<!-- JS Populated -->
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<!-- JavaScript Logic & Firebase Integration -->
+<script>
+  // 1. تهيئة Firebase بمفاتيح حسابك الخاصة
+  const firebaseConfig = {
+    apiKey: "AIzaSyBE06p2HQUMdECWE1KmGf-hruhSovjdyHk",
+    authDomain: "rammah-cash-store.firebaseapp.com",
+    projectId: "rammah-cash-store",
+    storageBucket: "rammah-cash-store.firebasestorage.app",
+    messagingSenderId: "282825123658",
+    appId: "1:282825123658:web:ef295ae68f87dc074503b3",
+    measurementId: "G-TBYZ75ZY29"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // State Variables
+  let products = [];
+  let sales = [];
+  let purchases = [];
+  let payments = [];
+  let capitalOffset = 0;
+  let cart = [];
+  let tempPurchaseItems = [];
+
+  // Real-time Cloud Listeners (المزامنة السحابية الفورية)
+  window.addEventListener('DOMContentLoaded', () => {
+    // 1. الاستماع لتغييرات المنتجات والمخزون
+    db.collection('products').onSnapshot(snapshot => {
+      products = [];
+      snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
       renderInventory();
+      livePreviewPOS();
+      updateCapitalDisplay();
+    });
+
+    // 2. الاستماع لتغييرات الفواتير والمبيعات
+    db.collection('sales').orderBy('date', 'desc').onSnapshot(snapshot => {
+      sales = [];
+      snapshot.forEach(doc => sales.push({ id: doc.id, ...doc.data() }));
       renderReports();
+      renderPastSalesTable();
+    });
+
+    // 3. الاستماع لفواتير المشتريات
+    db.collection('purchases').orderBy('date', 'desc').onSnapshot(snapshot => {
+      purchases = [];
+      snapshot.forEach(doc => purchases.push({ id: doc.id, ...doc.data() }));
+      renderPurchasesArchive();
+      renderPaymentsSummary();
+    });
+
+    // 4. الاستماع لدفعات الموردين
+    db.collection('payments').orderBy('date', 'desc').onSnapshot(snapshot => {
+      payments = [];
+      snapshot.forEach(doc => payments.push({ id: doc.id, ...doc.data() }));
+      renderPaymentsHistory();
+      renderPaymentsSummary();
+    });
+
+    // 5. الاستماع لتسويات رأس المال
+    db.collection('settings').doc('capital').onSnapshot(doc => {
+      if (doc.exists) {
+        capitalOffset = doc.data().offset || 0;
+      } else {
+        capitalOffset = 0;
+      }
       updateCapitalDisplay();
-    };
+    });
 
-    function saveData() {
-      localStorage.setItem('rc_products', JSON.stringify(products));
-      localStorage.setItem('rc_sales', JSON.stringify(sales));
-      localStorage.setItem('rc_capital', capital.toString());
+    // Set default dates
+    document.getElementById('pur-date').valueAsDate = new Date();
+    document.getElementById('pay-date').valueAsDate = new Date();
+  });
+
+  // Tab Navigation Logic
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('bg-blue-600', 'text-white');
+      btn.classList.add('text-slate-300', 'hover:text-white');
+    });
+
+    document.getElementById('sec-' + tabId).classList.remove('hidden');
+    const activeBtn = document.getElementById('tab-' + tabId);
+    activeBtn.classList.remove('text-slate-300', 'hover:text-white');
+    activeBtn.classList.add('bg-blue-600', 'text-white');
+  }
+
+  // Calculate & Display Capital (رأس المال = إجمالي قيمة البضاعة الحالية بسعر التكلفة)
+  function getInventoryTotalCost() {
+    return products.reduce((sum, p) => sum + ((Number(p.cost) || 0) * (Number(p.stock) || 0)), 0);
+  }
+
+  function updateCapitalDisplay() {
+    const currentInventoryVal = getInventoryTotalCost();
+    const totalCapital = currentInventoryVal + capitalOffset;
+    document.getElementById('rep-current-capital').textContent = totalCapital.toLocaleString() + ' SYP';
+  }
+
+  // POS Functions
+  function livePreviewPOS() {
+    const query = document.getElementById('pos-search').value.trim().toLowerCase();
+    const previewBox = document.getElementById('pos-item-preview');
+
+    if (!query) {
+      previewBox.classList.add('hidden');
+      return;
     }
 
-    function calculateInventoryTotalCost() {
-      return products.reduce((sum, p) => sum + (p.cost * p.stock), 0);
+    const prod = products.find(p => p.code.toLowerCase() === query || p.name.toLowerCase().includes(query));
+    if (prod) {
+      document.getElementById('prev-name').textContent = prod.name;
+      document.getElementById('prev-stock').textContent = prod.stock + ' قطعة';
+      document.getElementById('prev-cost').textContent = prod.cost.toLocaleString() + ' SYP';
+      document.getElementById('prev-price').textContent = prod.price.toLocaleString() + ' SYP';
+      document.getElementById('prev-profit').textContent = (prod.price - prod.cost).toLocaleString() + ' SYP';
+      previewBox.classList.remove('hidden');
+    } else {
+      previewBox.classList.add('hidden');
+    }
+  }
+
+  function searchAndAddToCart() {
+    const query = document.getElementById('pos-search').value.trim().toLowerCase();
+    const qtyToAdd = parseInt(document.getElementById('pos-add-qty').value) || 1;
+
+    if (!query) return alert('الرجاء إدخال كود أو اسم القطعة!');
+
+    const prod = products.find(p => p.code.toLowerCase() === query || p.name.toLowerCase().includes(query));
+    if (!prod) return alert('القطعة غير موجودة بالمخزون!');
+    if (prod.stock <= 0) return alert('الكمية المتاحة من هذه القطعة نافذة!');
+
+    const inCart = cart.find(i => i.code === prod.code);
+    const currentCartQty = inCart ? inCart.qty : 0;
+
+    if (currentCartQty + qtyToAdd > prod.stock) {
+      return alert(`الكمية المتاحة بالمحل فقط (${prod.stock}) قطعة!`);
     }
 
-    function syncCapitalWithInventory() {
-      capital = calculateInventoryTotalCost();
-      saveData();
-      updateCapitalDisplay();
-      alert('تمت مزامنة رأس المال بنجاح مع القيمة الإجمالية للتكلفة للمنتجات المتاحة بالمخزن حالياً!');
+    if (inCart) {
+      inCart.qty += qtyToAdd;
+    } else {
+      cart.push({
+        code: prod.code,
+        name: prod.name,
+        cost: prod.cost,
+        price: prod.price,
+        qty: qtyToAdd,
+        stock: prod.stock
+      });
     }
 
-    function updateCapitalDisplay() {
-      document.getElementById('displayCapital').textContent = capital.toFixed(2) + ' $';
+    document.getElementById('pos-search').value = '';
+    document.getElementById('pos-add-qty').value = '1';
+    document.getElementById('pos-item-preview').classList.add('hidden');
+    renderCart();
+  }
+
+  function updateCartQty(code, delta) {
+    const item = cart.find(i => i.code === code);
+    const prod = products.find(p => p.code === code);
+    if (!item || !prod) return;
+
+    if (item.qty + delta > prod.stock) return alert('تجاوزت الكمية المتاحة بالمخزن!');
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(i => i.code !== code);
+    renderCart();
+  }
+
+  function removeFromCart(code) {
+    cart = cart.filter(i => i.code !== code);
+    renderCart();
+  }
+
+  function clearCart() {
+    cart = [];
+    document.getElementById('pos-discount').value = '';
+    renderCart();
+  }
+
+  function renderCart() {
+    const tbody = document.getElementById('cart-table-body');
+    tbody.innerHTML = '';
+
+    if (cart.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-slate-400 font-bold">السلة فارغة. أدخل رقم الكود والعدد المطلوب للبيع.</td></tr>`;
+      document.getElementById('cart-count').textContent = '0 مواد';
+      document.getElementById('pos-subtotal').textContent = '0 SYP';
+      document.getElementById('pos-final-total').textContent = '0 SYP';
+      document.getElementById('pos-expected-profit').textContent = '0 SYP';
+      return;
     }
 
-    // Navigation
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
+    let subtotal = 0;
+    let totalCost = 0;
+    let totalItemsCount = 0;
 
-      event.currentTarget.classList.add('active');
-      document.getElementById('view-' + tabId).classList.add('active');
+    cart.forEach(item => {
+      const itemTotal = item.price * item.qty;
+      const itemCostTotal = item.cost * item.qty;
+      const itemProfit = itemTotal - itemCostTotal;
 
-      if(tabId === 'pos') renderPosProducts();
-      if(tabId === 'inventory') renderInventory();
-      if(tabId === 'reports') renderReports();
-    }
+      subtotal += itemTotal;
+      totalCost += itemCostTotal;
+      totalItemsCount += item.qty;
 
-    // POS logic
-    function renderPosProducts() {
-      const query = document.getElementById('posSearch').value.toLowerCase();
-      const container = document.getElementById('posProductsList');
-      container.innerHTML = '';
-
-      const filtered = products.filter(p => p.name.toLowerCase().includes(query));
-
-      filtered.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.onclick = () => addToCart(p.id);
-        card.innerHTML = `
-          <div>
-            <div class="product-name">${p.name}</div>
-            <div class="product-meta">
-              <span>المتوفر: ${p.stock}</span>
-              <span>التكلفة: ${p.cost} $</span>
+      tbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-2.5 text-blue-600">${item.code}</td>
+          <td class="p-2.5">${item.name}</td>
+          <td class="p-2.5 text-slate-500">${item.cost.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-slate-800">${item.price.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-slate-500">${item.stock}</td>
+          <td class="p-2.5">
+            <div class="flex items-center gap-1.5 justify-start">
+              <button onclick="updateCartQty('${item.code}', -1)" class="w-6 h-6 bg-slate-200 hover:bg-slate-300 rounded font-bold text-slate-700">-</button>
+              <span class="w-8 text-center text-sm font-extrabold">${item.qty}</span>
+              <button onclick="updateCartQty('${item.code}', 1)" class="w-6 h-6 bg-slate-200 hover:bg-slate-300 rounded font-bold text-slate-700">+</button>
             </div>
-          </div>
-          <div class="product-price">${p.price} $</div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function addToCart(prodId) {
-      const prod = products.find(p => p.id === prodId);
-      if(!prod || prod.stock <= 0) {
-        alert('هذا المنتج غير متوفر بالكمية الكافية في المخزن!');
-        return;
-      }
-
-      const cartItem = cart.find(item => item.id === prodId);
-      if(cartItem) {
-        if(cartItem.qty + 1 > prod.stock) {
-          alert('وصلت للحد الأقصى المتاح بالمخزن لهذا المنتج!');
-          return;
-        }
-        cartItem.qty++;
-      } else {
-        cart.push({
-          id: prod.id,
-          name: prod.name,
-          cost: prod.cost,
-          price: prod.price,
-          qty: 1
-        });
-      }
-      renderCart();
-    }
-
-    function updateCartQty(prodId, delta) {
-      const item = cart.find(i => i.id === prodId);
-      const prod = products.find(p => p.id === prodId);
-      if(!item || !prod) return;
-
-      if(item.qty + delta > prod.stock) {
-        alert('الكمية المطلوبة تتجاوز المتاح في المخزن!');
-        return;
-      }
-
-      item.qty += delta;
-      if(item.qty <= 0) {
-        cart = cart.filter(i => i.id !== prodId);
-      }
-      renderCart();
-    }
-
-    function renderCart() {
-      const container = document.getElementById('cartItemsList');
-      container.innerHTML = '';
-
-      let total = 0;
-      let count = 0;
-
-      cart.forEach(item => {
-        const itemTotal = item.price * item.qty;
-        total += itemTotal;
-        count += item.qty;
-
-        const row = document.createElement('div');
-        row.className = 'cart-item';
-        row.innerHTML = `
-          <div>
-            <div style="font-weight:700;">${item.name}</div>
-            <div style="font-size:0.8rem; color: var(--text-muted);">${item.price} $ × ${item.qty} = ${itemTotal.toFixed(2)} $</div>
-          </div>
-          <div class="qty-controls">
-            <button class="btn-qty" onclick="updateCartQty('${item.id}', -1)">-</button>
-            <span>${item.qty}</span>
-            <button class="btn-qty" onclick="updateCartQty('${item.id}', 1)">+</button>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-
-      document.getElementById('cartCount').textContent = count;
-      document.getElementById('cartTotal').textContent = total.toFixed(2) + ' $';
-    }
-
-    function completeSale() {
-      if(cart.length === 0) {
-        alert('سلة المبيعات فارغة!');
-        return;
-      }
-
-      const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-      const totalCost = cart.reduce((sum, i) => sum + (i.cost * i.qty), 0);
-      const profit = totalAmount - totalCost;
-
-      // Deduct stock from products
-      cart.forEach(cartItem => {
-        const p = products.find(prod => prod.id === cartItem.id);
-        if(p) {
-          p.stock -= cartItem.qty;
-        }
-      });
-
-      // Deduct sold goods cost from current capital
-      capital = Math.max(0, capital - totalCost);
-
-      const saleRecord = {
-        id: 'INV-' + Date.now().toString().slice(-6),
-        date: new Date().toISOString(),
-        items: [...cart],
-        totalAmount: totalAmount,
-        totalCost: totalCost,
-        profit: profit
-      };
-
-      sales.unshift(saleRecord);
-      cart = [];
-
-      saveData();
-      renderCart();
-      renderPosProducts();
-      updateCapitalDisplay();
-
-      alert(`تمت عملية البيع بنجاح!\n• الإجمالي: ${totalAmount.toFixed(2)} $\n• نُقص من رأس المال (التكلفة): ${totalCost.toFixed(2)} $\n• صافي الربح: ${profit.toFixed(2)} $`);
-    }
-
-    // Inventory Logic
-    function renderInventory() {
-      const tbody = document.getElementById('inventoryTableBody');
-      tbody.innerHTML = '';
-
-      products.forEach(p => {
-        const totalCostVal = p.cost * p.stock;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${p.name}</strong></td>
-          <td>${p.cost.toFixed(2)} $</td>
-          <td>${p.price.toFixed(2)} $</td>
-          <td><span class="badge ${p.stock > 5 ? 'badge-success' : 'text-danger'}">${p.stock}</span></td>
-          <td>${totalCostVal.toFixed(2)} $</td>
-          <td>
-            <button class="btn-sm btn-outline" onclick="editProduct('${p.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-sm btn-outline text-danger" onclick="deleteProduct('${p.id}')"><i class="fa-solid fa-trash"></i></button>
           </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function openProductModal(prodId = null) {
-      document.getElementById('productForm').reset();
-      document.getElementById('prodId').value = '';
-      document.getElementById('productModalTitle').textContent = 'إضافة منتج جديد';
-
-      if(prodId) {
-        const p = products.find(prod => prod.id === prodId);
-        if(p) {
-          document.getElementById('prodId').value = p.id;
-          document.getElementById('prodName').value = p.name;
-          document.getElementById('prodCost').value = p.cost;
-          document.getElementById('prodPrice').value = p.price;
-          document.getElementById('prodStock').value = p.stock;
-          document.getElementById('productModalTitle').textContent = 'تعديل بيانات المنتج';
-        }
-      }
-
-      document.getElementById('productModal').classList.add('active');
-    }
-
-    function closeProductModal() {
-      document.getElementById('productModal').classList.remove('active');
-    }
-
-    function saveProduct(e) {
-      e.preventDefault();
-      const id = document.getElementById('prodId').value;
-      const name = document.getElementById('prodName').value;
-      const cost = parseFloat(document.getElementById('prodCost').value);
-      const price = parseFloat(document.getElementById('prodPrice').value);
-      const stock = parseInt(document.getElementById('prodStock').value);
-
-      if(id) {
-        const p = products.find(prod => prod.id === id);
-        if(p) {
-          p.name = name;
-          p.cost = cost;
-          p.price = price;
-          p.stock = stock;
-        }
-      } else {
-        products.push({
-          id: 'PROD-' + Date.now(),
-          name, cost, price, stock
-        });
-      }
-
-      saveData();
-      renderInventory();
-      renderPosProducts();
-      closeProductModal();
-    }
-
-    function editProduct(id) {
-      openProductModal(id);
-    }
-
-    function deleteProduct(id) {
-      if(confirm('هل انت متأكد من حذف هذا المنتج؟')) {
-        products = products.filter(p => p.id !== id);
-        saveData();
-        renderInventory();
-        renderPosProducts();
-      }
-    }
-
-    // Capital Modal Logic
-    function openCapitalModal() {
-      document.getElementById('capitalAdjAmount').value = '';
-      document.getElementById('capitalModal').classList.add('active');
-    }
-
-    function closeCapitalModal() {
-      document.getElementById('capitalModal').classList.remove('active');
-    }
-
-    function applyCapitalAdjustment() {
-      const type = document.getElementById('capitalAdjType').value;
-      const amount = parseFloat(document.getElementById('capitalAdjAmount').value) || 0;
-
-      if(amount <= 0 && type !== 'set') {
-        alert('يرجى إدخال مبلغ صحيح!');
-        return;
-      }
-
-      if(type === 'set') capital = amount;
-      if(type === 'add') capital += amount;
-      if(type === 'sub') capital = Math.max(0, capital - amount);
-
-      saveData();
-      updateCapitalDisplay();
-      closeCapitalModal();
-    }
-
-    // Reports Logic
-    function renderReports() {
-      updateCapitalDisplay();
-
-      // Stats Totals
-      const totalSalesAmt = sales.reduce((sum, s) => sum + s.totalAmount, 0);
-      const totalCostAmt = sales.reduce((sum, s) => sum + s.totalCost, 0);
-      const totalProfitAmt = sales.reduce((sum, s) => sum + s.profit, 0);
-
-      document.getElementById('statSales').textContent = totalSalesAmt.toFixed(2) + ' $';
-      document.getElementById('statCost').textContent = totalCostAmt.toFixed(2) + ' $';
-      document.getElementById('statProfit').textContent = totalProfitAmt.toFixed(2) + ' $';
-      document.getElementById('statInvoicesCount').textContent = sales.length;
-
-      // Group Daily Profits
-      const dailyMap = {};
-      sales.forEach(s => {
-        const day = s.date.split('T')[0];
-        if(!dailyMap[day]) {
-          dailyMap[day] = { count: 0, sales: 0, cost: 0, profit: 0 };
-        }
-        dailyMap[day].count++;
-        dailyMap[day].sales += s.totalAmount;
-        dailyMap[day].cost += s.totalCost;
-        dailyMap[day].profit += s.profit;
-      });
-
-      const dailyTbody = document.getElementById('dailyProfitsTable');
-      dailyTbody.innerHTML = '';
-      Object.keys(dailyMap).sort().reverse().forEach(day => {
-        const d = dailyMap[day];
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${day}</strong></td>
-          <td>${d.count}</td>
-          <td>${d.sales.toFixed(2)} $</td>
-          <td>${d.cost.toFixed(2)} $</td>
-          <td class="text-success" style="font-weight:700;">${d.profit.toFixed(2)} $</td>
-        `;
-        dailyTbody.appendChild(tr);
-      });
-
-      // Group Weekly Profits (Saturday to Friday)
-      const weeklyMap = {};
-      sales.forEach(s => {
-        const dt = new Date(s.date);
-        // calculate start of week (Saturday)
-        const dayIdx = (dt.getDay() + 1) % 7;
-        const sat = new Date(dt);
-        sat.setDate(dt.getDate() - dayIdx);
-        const fri = new Date(sat);
-        fri.setDate(sat.getDate() + 6);
-
-        const weekKey = `${sat.toISOString().split('T')[0]} إلى ${fri.toISOString().split('T')[0]}`;
-
-        if(!weeklyMap[weekKey]) {
-          weeklyMap[weekKey] = { count: 0, sales: 0, cost: 0, profit: 0 };
-        }
-        weeklyMap[weekKey].count++;
-        weeklyMap[weekKey].sales += s.totalAmount;
-        weeklyMap[weekKey].cost += s.totalCost;
-        weeklyMap[weekKey].profit += s.profit;
-      });
-
-      const weeklyTbody = document.getElementById('weeklyProfitsTable');
-      weeklyTbody.innerHTML = '';
-      Object.keys(weeklyMap).forEach(week => {
-        const w = weeklyMap[week];
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${week}</strong></td>
-          <td>${w.count}</td>
-          <td>${w.sales.toFixed(2)} $</td>
-          <td>${w.cost.toFixed(2)} $</td>
-          <td class="text-success" style="font-weight:700;">${w.profit.toFixed(2)} $</td>
-        `;
-        weeklyTbody.appendChild(tr);
-      });
-
-      // Detailed Invoices
-      const invTbody = document.getElementById('invoicesTableBody');
-      invTbody.innerHTML = '';
-      sales.forEach(s => {
-        const dateFormatted = new Date(s.date).toLocaleString('ar-EG');
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${s.id}</strong></td>
-          <td>${dateFormatted}</td>
-          <td>${s.totalAmount.toFixed(2)} $</td>
-          <td>${s.totalCost.toFixed(2)} $</td>
-          <td class="text-success">${s.profit.toFixed(2)} $</td>
-          <td>
-            <button class="btn-sm btn-outline text-danger" onclick="deleteSale('${s.id}')">
-              <i class="fa-solid fa-rotate-left"></i> إلغاء / إرجاع الفاتورة
-            </button>
+          <td class="p-2.5 text-emerald-600">${itemProfit.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-blue-700 text-sm font-extrabold">${itemTotal.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-center">
+            <button onclick="removeFromCart('${item.code}')" class="text-red-500 hover:text-red-700 text-sm"><i class="fa-solid fa-trash"></i></button>
           </td>
-        `;
-        invTbody.appendChild(tr);
-      });
+        </tr>
+      `;
+    });
+
+    const discount = parseFloat(document.getElementById('pos-discount').value) || 0;
+    const finalTotal = Math.max(0, subtotal - discount);
+    const expectedProfit = finalTotal - totalCost;
+
+    document.getElementById('cart-count').textContent = totalItemsCount + ' مواد';
+    document.getElementById('pos-subtotal').textContent = subtotal.toLocaleString() + ' SYP';
+    document.getElementById('pos-final-total').textContent = finalTotal.toLocaleString() + ' SYP';
+    document.getElementById('pos-expected-profit').textContent = expectedProfit.toLocaleString() + ' SYP';
+  }
+
+  async function completeSale() {
+    if (cart.length === 0) return alert('السلة فارغة!');
+
+    const discount = parseFloat(document.getElementById('pos-discount').value) || 0;
+    const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+    const totalCost = cart.reduce((s, i) => s + (i.cost * i.qty), 0);
+    const finalTotal = Math.max(0, subtotal - discount);
+    const profit = finalTotal - totalCost;
+
+    const batch = db.batch();
+
+    // 1. خصم الكميات من السحابة (ينقص المخزون وبالتالي ينقص رأس المال تلقائياً)
+    cart.forEach(item => {
+      const pRef = db.collection('products').doc(item.code);
+      const prod = products.find(p => p.code === item.code);
+      if (prod) {
+        batch.update(pRef, { stock: Math.max(0, prod.stock - item.qty) });
+      }
+    });
+
+    // 2. تسجيل الفاتورة السحابية
+    const saleId = 'INV-' + Date.now().toString().slice(-6);
+    const saleRef = db.collection('sales').doc(saleId);
+    batch.set(saleRef, {
+      date: new Date().toISOString(),
+      items: cart,
+      subtotal,
+      discount,
+      finalTotal,
+      totalCost,
+      profit
+    });
+
+    await batch.commit();
+
+    clearCart();
+    alert('تم إتمام عملية البيع وتسجيل الفاتورة سحابياً بنجاح!');
+  }
+
+  // Inventory Management Functions
+  function autoCheckProduct() {
+    const code = document.getElementById('p-code').value.trim();
+    const badge = document.getElementById('p-status-badge');
+    const info = document.getElementById('p-current-qty-info');
+
+    const prod = products.find(p => p.code === code);
+    if (prod) {
+      badge.classList.remove('hidden');
+      info.textContent = `الكمية الحالية بالمحل: ${prod.stock} قطعة`;
+      document.getElementById('p-name').value = prod.name;
+      document.getElementById('p-cost').value = prod.cost;
+      document.getElementById('p-price').value = prod.price;
+    } else {
+      badge.classList.add('hidden');
+      info.textContent = `الكمية الحالية بالمحل: 0 قطعة`;
+    }
+  }
+
+  async function saveProduct(e) {
+    e.preventDefault();
+    const code = document.getElementById('p-code').value.trim();
+    const name = document.getElementById('p-name').value.trim();
+    const action = document.getElementById('p-action').value;
+    const cost = parseFloat(document.getElementById('p-cost').value) || 0;
+    const price = parseFloat(document.getElementById('p-price').value) || 0;
+    const qty = parseInt(document.getElementById('p-qty').value) || 0;
+
+    if (!code || !name) return alert('الرجاء كتابة كود واسم المادة!');
+
+    const existing = products.find(p => p.code === code);
+    let newStock = qty;
+
+    if (existing) {
+      if (action === 'add') newStock = existing.stock + qty;
+      if (action === 'remove') newStock = Math.max(0, existing.stock - qty);
+      if (action === 'set') newStock = qty;
     }
 
-    function deleteSale(saleId) {
-      if(!confirm('هل تريد إلغاء هذه الفاتورة؟ سيتم إعادة الكميات المباعة للمخزن وإعادة تكلفة الفاتورة لرأس المال.')) return;
+    await db.collection('products').doc(code).set({
+      code, name, cost, price, stock: newStock
+    }, { merge: true });
 
-      const idx = sales.findIndex(s => s.id === saleId);
-      if(idx === -1) return;
+    document.getElementById('product-form').reset();
+    document.getElementById('p-status-badge').classList.add('hidden');
+    document.getElementById('p-current-qty-info').textContent = 'الكمية الحالية بالمحل: 0 قطعة';
+    alert('تم حفظ البيانات سحابياً وتحديث المخزون ورأس المال!');
+  }
 
-      const sale = sales[idx];
+  function renderInventory() {
+    const filter = document.getElementById('inventory-filter').value.toLowerCase();
+    const tbody = document.getElementById('inventory-table-body');
+    tbody.innerHTML = '';
 
-      // Restore inventory stock
+    const list = products.filter(p => p.code.toLowerCase().includes(filter) || p.name.toLowerCase().includes(filter));
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-slate-400">لا توجد منتجات مسجلة.</td></tr>`;
+      return;
+    }
+
+    list.forEach(p => {
+      const profitPerPiece = p.price - p.cost;
+      tbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-3 text-blue-600">${p.code}</td>
+          <td class="p-3">${p.name}</td>
+          <td class="p-3">${p.cost.toLocaleString()} SYP</td>
+          <td class="p-3">${p.price.toLocaleString()} SYP</td>
+          <td class="p-3 text-emerald-600">${profitPerPiece.toLocaleString()} SYP</td>
+          <td class="p-3 text-slate-800 font-extrabold">${p.stock}</td>
+          <td class="p-3 text-center">
+            <button onclick="editInventoryItem('${p.code}')" class="text-blue-600 hover:text-blue-800 ml-2"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button onclick="deleteInventoryItem('${p.code}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  function editInventoryItem(code) {
+    const prod = products.find(p => p.code === code);
+    if (!prod) return;
+    document.getElementById('p-code').value = prod.code;
+    document.getElementById('p-name').value = prod.name;
+    document.getElementById('p-cost').value = prod.cost;
+    document.getElementById('p-price').value = prod.price;
+    document.getElementById('p-qty').value = prod.stock;
+    document.getElementById('p-action').value = 'set';
+    autoCheckProduct();
+    switchTab('inventory');
+  }
+
+  async function deleteInventoryItem(code) {
+    if (confirm('هل أنت تأكد من حذف المادة من السحابة؟')) {
+      await db.collection('products').doc(code).delete();
+    }
+  }
+
+  // Purchases Functions
+  function calculateItemCostSYP() {
+    const rate = parseFloat(document.getElementById('pur-rate').value) || 0;
+    const costUsd = parseFloat(document.getElementById('pur-cost-usd').value) || 0;
+    document.getElementById('pur-cost-syp').value = Math.round(costUsd * rate);
+  }
+
+  function autoFillPurchaseItem() {
+    const code = document.getElementById('pur-code').value.trim();
+    const prod = products.find(p => p.code === code);
+    if (prod) {
+      document.getElementById('pur-name').value = prod.name;
+      document.getElementById('pur-price-syp').value = prod.price;
+    }
+  }
+
+  function addItemToTempPurchase() {
+    const code = document.getElementById('pur-code').value.trim();
+    const name = document.getElementById('pur-name').value.trim();
+    const costUsd = parseFloat(document.getElementById('pur-cost-usd').value) || 0;
+    const costSyp = parseFloat(document.getElementById('pur-cost-syp').value) || 0;
+    const priceSyp = parseFloat(document.getElementById('pur-price-syp').value) || 0;
+    const qty = parseInt(document.getElementById('pur-qty').value) || 0;
+
+    if (!code || !name || qty <= 0) return alert('الرجاء إدخال بيانات المادة والكمية بشكل صحيح!');
+
+    tempPurchaseItems.push({ code, name, costUsd, costSyp, priceSyp, qty });
+    renderTempPurchaseTable();
+
+    document.getElementById('pur-code').value = '';
+    document.getElementById('pur-name').value = '';
+    document.getElementById('pur-cost-usd').value = '';
+    document.getElementById('pur-cost-syp').value = '';
+    document.getElementById('pur-price-syp').value = '';
+    document.getElementById('pur-qty').value = '';
+  }
+
+  function removeTempPurchaseItem(index) {
+    tempPurchaseItems.splice(index, 1);
+    renderTempPurchaseTable();
+  }
+
+  function renderTempPurchaseTable() {
+    const tbody = document.getElementById('pur-temp-table');
+    tbody.innerHTML = '';
+
+    if (tempPurchaseItems.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-slate-400">لم يتم إضافة مواد للفاتورة بعد.</td></tr>`;
+      document.getElementById('pur-total-usd').textContent = '0 $';
+      return;
+    }
+
+    let totalUsd = 0;
+    tempPurchaseItems.forEach((item, idx) => {
+      totalUsd += item.costUsd * item.qty;
+      tbody.innerHTML += `
+        <tr class="font-bold">
+          <td class="p-2">${item.code}</td>
+          <td class="p-2">${item.name}</td>
+          <td class="p-2">${item.costUsd} $</td>
+          <td class="p-2">${item.costSyp.toLocaleString()} SYP</td>
+          <td class="p-2">${item.priceSyp.toLocaleString()} SYP</td>
+          <td class="p-2 text-blue-600">${item.qty}</td>
+          <td class="p-2 text-center">
+            <button onclick="removeTempPurchaseItem(${idx})" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    });
+
+    document.getElementById('pur-total-usd').textContent = totalUsd.toFixed(2) + ' $';
+  }
+
+  async function savePurchaseInvoice() {
+    const invNum = document.getElementById('pur-inv-num').value.trim();
+    const date = document.getElementById('pur-date').value;
+    const rate = parseFloat(document.getElementById('pur-rate').value) || 0;
+
+    if (!invNum || !date || tempPurchaseItems.length === 0) return alert('الرجاء إكمال بيانات الفاتورة وإضافة مواد!');
+
+    const batch = db.batch();
+    const totalUsd = tempPurchaseItems.reduce((s, i) => s + (i.costUsd * i.qty), 0);
+
+    // 1. حفظ الفاتورة في السحابة
+    const purRef = db.collection('purchases').doc('PUR-' + invNum);
+    batch.set(purRef, {
+      invNum, date, rate, items: tempPurchaseItems, totalUsd
+    });
+
+    // 2. تزويد المخزون في السحابة (يزيد الكميات فيزداد رأس المال تلقائياً)
+    tempPurchaseItems.forEach(item => {
+      const pRef = db.collection('products').doc(item.code);
+      const existing = products.find(p => p.code === item.code);
+      const newStock = existing ? existing.stock + item.qty : item.qty;
+
+      batch.set(pRef, {
+        code: item.code,
+        name: item.name,
+        cost: item.costSyp,
+        price: item.priceSyp,
+        stock: newStock
+      }, { merge: true });
+    });
+
+    await batch.commit();
+
+    tempPurchaseItems = [];
+    document.getElementById('pur-inv-num').value = '';
+    renderTempPurchaseTable();
+    alert('تم حفظ فاتورة المشتريات وتحديث كميات البضاعة ورأس المال سحابياً!');
+  }
+
+  function renderPurchasesArchive() {
+    const tbody = document.getElementById('purchases-archive-body');
+    tbody.innerHTML = '';
+
+    if (purchases.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-400">لا توجد فواتير مشتريات مسجلة.</td></tr>`;
+      return;
+    }
+
+    purchases.forEach(p => {
+      tbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-3 text-blue-600">${p.invNum}</td>
+          <td class="p-3">${p.date}</td>
+          <td class="p-3">${p.rate} SYP</td>
+          <td class="p-3">${p.items ? p.items.length : 0} مواد</td>
+          <td class="p-3 text-emerald-600 font-extrabold">${p.totalUsd.toFixed(2)} $</td>
+          <td class="p-3 text-center">
+            <button onclick="deletePurchaseInvoice('${p.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i> حذف</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  async function deletePurchaseInvoice(id) {
+    if (confirm('هل تريد حذف فاتورة الشراء من السحابة؟')) {
+      await db.collection('purchases').doc(id).delete();
+    }
+  }
+
+  // Supplier Payments Functions
+  async function recordSupplierPayment(e) {
+    e.preventDefault();
+    const date = document.getElementById('pay-date').value;
+    const amountUsd = parseFloat(document.getElementById('pay-amount-usd').value) || 0;
+    const notes = document.getElementById('pay-notes').value.trim();
+
+    if (!date || amountUsd <= 0) return alert('الرجاء كتابة المبلغ والتاريخ!');
+
+    const payId = 'PAY-' + Date.now();
+    await db.collection('payments').doc(payId).set({ date, amountUsd, notes });
+
+    document.getElementById('payment-form').reset();
+    document.getElementById('pay-date').valueAsDate = new Date();
+    alert('تم تسجيل الدفعة بالسحابة بنجاح!');
+  }
+
+  function renderPaymentsHistory() {
+    const tbody = document.getElementById('payments-history-body');
+    tbody.innerHTML = '';
+
+    if (payments.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-slate-400">لا توجد دفعات مسجلة.</td></tr>`;
+      return;
+    }
+
+    payments.forEach(p => {
+      tbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-3">${p.date}</td>
+          <td class="p-3 text-emerald-600 font-extrabold">${p.amountUsd.toFixed(2)} $</td>
+          <td class="p-3">${p.notes}</td>
+          <td class="p-3 text-center">
+            <button onclick="deletePayment('${p.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  async function deletePayment(id) {
+    if (confirm('هل تريد حذف الدفعة؟')) {
+      await db.collection('payments').doc(id).delete();
+    }
+  }
+
+  function renderPaymentsSummary() {
+    const totalPurchasesUsd = purchases.reduce((s, p) => s + (p.totalUsd || 0), 0);
+    const totalPaidUsd = payments.reduce((s, p) => s + (p.amountUsd || 0), 0);
+    const remainingUsd = totalPurchasesUsd - totalPaidUsd;
+
+    document.getElementById('pay-total-purchases').textContent = totalPurchasesUsd.toFixed(2) + ' $';
+    document.getElementById('pay-total-paid').textContent = totalPaidUsd.toFixed(2) + ' $';
+    document.getElementById('pay-remaining').textContent = remainingUsd.toFixed(2) + ' $';
+  }
+
+  // Financial Reports Logic
+  function renderReports() {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let todaySales = 0, todayProfit = 0;
+    let totalSales = 0, totalProfit = 0;
+
+    const dailyMap = {};
+    const weeklyMap = {};
+
+    sales.forEach(s => {
+      const day = s.date.split('T')[0];
+      const amount = s.finalTotal || 0;
+      const profit = s.profit || 0;
+      const cost = s.totalCost || 0;
+
+      totalSales += amount;
+      totalProfit += profit;
+
+      if (day === todayStr) {
+        todaySales += amount;
+        todayProfit += profit;
+      }
+
+      // Aggregate Daily
+      if (!dailyMap[day]) dailyMap[day] = { count: 0, sales: 0, cost: 0, profit: 0 };
+      dailyMap[day].count++;
+      dailyMap[day].sales += amount;
+      dailyMap[day].cost += cost;
+      dailyMap[day].profit += profit;
+
+      // Aggregate Weekly (Saturday to Friday)
+      const d = new Date(s.date);
+      const dayNum = d.getDay();
+      const diffToSat = (dayNum + 1) % 7;
+      const sat = new Date(d);
+      sat.setDate(d.getDate() - diffToSat);
+      const fri = new Date(sat);
+      fri.setDate(sat.getDate() + 6);
+
+      const weekKey = `${sat.toISOString().split('T')[0]} إلى ${fri.toISOString().split('T')[0]}`;
+      if (!weeklyMap[weekKey]) weeklyMap[weekKey] = { count: 0, sales: 0, cost: 0, profit: 0 };
+      weeklyMap[weekKey].count++;
+      weeklyMap[weekKey].sales += amount;
+      weeklyMap[weekKey].cost += cost;
+      weeklyMap[weekKey].profit += profit;
+    });
+
+    document.getElementById('rep-today-sales').textContent = todaySales.toLocaleString() + ' SYP';
+    document.getElementById('rep-today-profit').textContent = todayProfit.toLocaleString() + ' SYP';
+    document.getElementById('rep-total-sales').textContent = totalSales.toLocaleString() + ' SYP';
+    document.getElementById('rep-total-profit').textContent = totalProfit.toLocaleString() + ' SYP';
+
+    // Render Daily Table
+    const dailyTbody = document.getElementById('rep-daily-table-body');
+    dailyTbody.innerHTML = '';
+    const daysKeys = Object.keys(dailyMap).sort().reverse();
+    document.getElementById('daily-log-count').textContent = daysKeys.length + ' يوم';
+
+    daysKeys.forEach(day => {
+      const data = dailyMap[day];
+      dailyTbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-2.5">${day}</td>
+          <td class="p-2.5 text-center">${data.count}</td>
+          <td class="p-2.5 text-blue-600">${data.sales.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-slate-500">${data.cost.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-emerald-600">${data.profit.toLocaleString()} SYP</td>
+        </tr>
+      `;
+    });
+
+    // Render Weekly Table
+    const weeklyTbody = document.getElementById('rep-weekly-table-body');
+    weeklyTbody.innerHTML = '';
+    const weekKeys = Object.keys(weeklyMap);
+    document.getElementById('weekly-log-count').textContent = weekKeys.length + ' أسبوع';
+
+    weekKeys.forEach(week => {
+      const data = weeklyMap[week];
+      weeklyTbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-2.5 text-blue-700">${week}</td>
+          <td class="p-2.5 text-center">${data.count}</td>
+          <td class="p-2.5 text-blue-600">${data.sales.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-slate-500">${data.cost.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-emerald-600">${data.profit.toLocaleString()} SYP</td>
+        </tr>
+      `;
+    });
+
+    // Render Sales History Table in Reports
+    const repSalesBody = document.getElementById('reports-sales-body');
+    repSalesBody.innerHTML = '';
+
+    sales.forEach(s => {
+      const itemCount = s.items ? s.items.reduce((acc, i) => acc + i.qty, 0) : 0;
+      repSalesBody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-3 text-blue-600">${s.id}</td>
+          <td class="p-3">${new Date(s.date).toLocaleString('ar-EG')}</td>
+          <td class="p-3">${itemCount} قطعة</td>
+          <td class="p-3 text-slate-800">${s.finalTotal.toLocaleString()} SYP</td>
+          <td class="p-3 text-emerald-600">${s.profit.toLocaleString()} SYP</td>
+          <td class="p-3 text-center">
+            <button onclick="deleteSaleInvoice('${s.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i> إلغاء الفاتورة</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  // Modals & Capital Edit
+  function openEditCapitalModal() {
+    document.getElementById('modal-edit-capital').classList.remove('hidden');
+  }
+
+  function closeEditCapitalModal() {
+    document.getElementById('modal-edit-capital').classList.add('hidden');
+  }
+
+  async function saveCapitalChange() {
+    const mode = document.getElementById('capital-mode').value;
+    const amount = parseFloat(document.getElementById('capital-amount-input').value) || 0;
+    const currentInventoryVal = getInventoryTotalCost();
+
+    let newOffset = capitalOffset;
+    if (mode === 'set') newOffset = amount - currentInventoryVal;
+    if (mode === 'add') newOffset += amount;
+    if (mode === 'subtract') newOffset -= amount;
+
+    await db.collection('settings').doc('capital').set({ offset: newOffset });
+    closeEditCapitalModal();
+    alert('تم تعديل تعادل رأس المال سحابياً!');
+  }
+
+  function openPastSalesModal() {
+    document.getElementById('modal-past-sales').classList.remove('hidden');
+  }
+
+  function closePastSalesModal() {
+    document.getElementById('modal-past-sales').classList.add('hidden');
+  }
+
+  function renderPastSalesTable() {
+    const tbody = document.getElementById('past-sales-table-body');
+    tbody.innerHTML = '';
+
+    if (sales.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-400">لا توجد فواتير مبيعات مسجلة.</td></tr>`;
+      return;
+    }
+
+    sales.forEach(s => {
+      const itemCount = s.items ? s.items.reduce((acc, i) => acc + i.qty, 0) : 0;
+      tbody.innerHTML += `
+        <tr class="hover:bg-slate-50 font-bold">
+          <td class="p-2.5 text-blue-600">${s.id}</td>
+          <td class="p-2.5">${new Date(s.date).toLocaleString('ar-EG')}</td>
+          <td class="p-2.5">${itemCount} قطعة</td>
+          <td class="p-2.5 text-blue-700">${s.finalTotal.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-emerald-600">${s.profit.toLocaleString()} SYP</td>
+          <td class="p-2.5 text-center">
+            <button onclick="deleteSaleInvoice('${s.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i> إلغاء الفاتورة</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  async function deleteSaleInvoice(saleId) {
+    if (!confirm('هل تريد إلغاء الفاتورة وإعادة الكميات المباعة إلى المخزون ورأس المال؟')) return;
+
+    const sale = sales.find(s => s.id === saleId);
+    if (!sale) return;
+
+    const batch = db.batch();
+
+    // 1. إعادة الكميات للمخزن (يزيد الكميات فيزداد رأس المال تلقائياً)
+    if (sale.items) {
       sale.items.forEach(item => {
-        const p = products.find(prod => prod.id === item.id);
-        if(p) {
-          p.stock += item.qty;
+        const pRef = db.collection('products').doc(item.code);
+        const prod = products.find(p => p.code === item.code);
+        if (prod) {
+          batch.update(pRef, { stock: prod.stock + item.qty });
         }
       });
-
-      // Restore capital cost value
-      capital += sale.totalCost;
-
-      sales.splice(idx, 1);
-      saveData();
-
-      renderReports();
-      renderInventory();
-      renderPosProducts();
     }
 
-    // Export & Import Backup
-    function exportData() {
-      const backupObj = {
-        products, sales, capital,
-        exportedAt: new Date().toISOString()
-      };
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `RammahCash_Backup_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
+    // 2. حذف الفاتورة من السحابة
+    batch.delete(db.collection('sales').doc(saleId));
 
-    function importData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    await batch.commit();
+    alert('تم إلغاء الفاتورة واسترجاع كميات البضاعة ورأس المال سحابياً!');
+  }
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (imported.products && imported.sales) {
-            products = imported.products;
-            sales = imported.sales;
-            capital = parseFloat(imported.capital) || calculateInventoryTotalCost();
-            saveData();
-            location.reload();
-          } else {
-            alert('ملف غير صالح!');
+  // Export / Import / Clear Data
+  function exportData() {
+    const data = { products, sales, purchases, payments, capitalOffset };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `Rammah_Cash_Backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function importData(event) {
+    const fileReader = new FileReader();
+    fileReader.onload = async function (e) {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (confirm('هل تريد استبدال البيانات السحابية الحالية بالبيانات من الملف؟')) {
+          const batch = db.batch();
+
+          if (importedData.products) {
+            importedData.products.forEach(p => batch.set(db.collection('products').doc(p.code), p));
           }
-        } catch (err) {
-          alert('حدث خطأ أثناء قراءة الملف!');
+          if (importedData.sales) {
+            importedData.sales.forEach(s => batch.set(db.collection('sales').doc(s.id), s));
+          }
+          if (importedData.capitalOffset !== undefined) {
+            batch.set(db.collection('settings').doc('capital'), { offset: importedData.capitalOffset });
+          }
+
+          await batch.commit();
+          alert('تم استعادة البيانات وحفظها سحابياً بنجاح!');
         }
-      };
-      reader.readAsText(file);
+      } catch (err) {
+        alert('ملف غير صالح!');
+      }
+    };
+    fileReader.readAsText(event.target.files[0]);
+  }
+
+  async function clearAllData() {
+    if (confirm('تحذير شديد: هل أنت متاكد تماماً من مسح كافة البيانات والمنتجات والفواتير ورأس المال من السحابة؟')) {
+      const batch = db.batch();
+
+      products.forEach(p => batch.delete(db.collection('products').doc(p.code)));
+      sales.forEach(s => batch.delete(db.collection('sales').doc(s.id)));
+      purchases.forEach(p => batch.delete(db.collection('purchases').doc(p.id)));
+      payments.forEach(p => batch.delete(db.collection('payments').doc(p.id)));
+      batch.delete(db.collection('settings').doc('capital'));
+
+      await batch.commit();
+      alert('تم تفريغ كافة البيانات السحابية بنجاح!');
     }
-  </script>
+  }
+</script>
 </body>
 </html>
